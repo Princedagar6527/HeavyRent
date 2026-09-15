@@ -1,3 +1,4 @@
+git
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -5,6 +6,8 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true, // Local IP access ko trust karega
+  secret: process.env.AUTH_SECRET,
   providers: [
     Credentials({
       name: "Credentials",
@@ -14,19 +17,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+          return null;
         }
 
         await dbConnect();
         const user = await User.findOne({ email: (credentials.email as string).toLowerCase() });
 
         if (!user || !user.password) {
-          throw new Error("Invalid credentials or user not registered");
+          return null;
         }
 
         const isMatch = await bcrypt.compare(credentials.password as string, user.password);
         if (!isMatch) {
-          throw new Error("Invalid credentials");
+          return null;
         }
 
         return {
@@ -59,9 +62,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   session: {
     strategy: "jwt",
   },
-  secret: process.env.AUTH_SECRET,
+  cookies: {
+    sessionToken: {
+      name: "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production", // Dev mode me HTTP allow karega
+      },
+    },
+  },
 });
