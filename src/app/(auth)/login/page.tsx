@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { AlertCircle, Lock } from "lucide-react";
+import { Truck, Lock, Phone, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -18,78 +16,92 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg("");
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        phone,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
-
-    if (res?.error) {
-      setErrorMsg("Invalid email or password. Please try again.");
-    } else {
-      router.push("/vehicles");
-      router.refresh();
+      if (res?.error) {
+        setErrorMsg("Invalid phone number or password");
+        setLoading(false);
+      } else {
+        // Successful login: redirect to home on the current domain
+        window.location.href = window.location.origin;
+      }
+    } catch (err) {
+      setErrorMsg("Something went wrong. Please try again.");
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
-        <div className="text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-            <Lock className="h-5 w-5" />
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md">
+            <Truck className="h-6 w-6" />
           </div>
-          <h1 className="mt-3 text-2xl font-black text-slate-900">Welcome Back</h1>
-          <p className="mt-1 text-xs text-slate-500">Sign in to manage rentals or track your fleet</p>
+          <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900">
+            Sign In to HeavyRent
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Enter your registered phone and password
+          </p>
         </div>
 
         <form onSubmit={handleLogin} className="mt-6 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-700">Email Address</label>
-            <input
-              type="email"
-              required
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-700">Password</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs outline-none focus:border-amber-500"
-            />
-          </div>
-
           {errorMsg && (
-            <div className="flex items-center gap-1.5 text-xs text-rose-600">
+            <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs font-semibold text-rose-600 border border-rose-200">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Phone Number</label>
+            <div className="relative mt-1">
+              <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="tel"
+                required
+                placeholder="10-digit number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Password</label>
+            <div className="relative mt-1">
+              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="password"
+                required
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-slate-900 py-3 text-xs font-bold text-white transition hover:bg-slate-800 disabled:opacity-50"
+            className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50 active:scale-98"
           >
-            {loading ? "Signing in..." : "Sign In to Account"}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          New to HeavyRent?{" "}
-          <Link href="/register" className="font-bold text-amber-600 hover:text-amber-700">
-            Create an account
+        <p className="mt-6 text-center text-xs text-slate-600">
+          Don't have an account?{" "}
+          <Link href="/register" className="font-bold text-amber-600 hover:underline">
+            Create Account
           </Link>
         </p>
       </div>

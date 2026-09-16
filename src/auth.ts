@@ -2,18 +2,37 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
+import bcrypt from "bcryptjs";
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     Credentials({
-      name: "Phone Number",
+      name: "Credentials",
       credentials: {
         phone: { label: "Phone", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.phone) return null;
+        if (!credentials?.phone || !credentials?.password) {
+          return null;
+        }
+
         await dbConnect();
         const user = await User.findOne({ phone: credentials.phone });
-        if (!user) return null;
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        const isValid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (!isValid) {
+          return null;
+        }
+
         return {
           id: user._id.toString(),
           name: user.name,
