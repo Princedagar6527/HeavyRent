@@ -187,11 +187,15 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
+      // 1. Session clear karein bina auto-redirect trigger kiye
       await signOut({ redirect: false });
-      // Hard navigation to home page ensures cookies & cache are completely flushed
-      window.location.href = "/";
     } catch (err) {
-      window.location.href = "/";
+      console.error("Sign out error:", err);
+    } finally {
+      // 2. Current origin par hard redirect karein (localhost par localhost, Vercel par Vercel)
+      if (typeof window !== "undefined") {
+        window.location.href = window.location.origin;
+      }
     }
   };
 
@@ -215,12 +219,12 @@ export default function Navbar() {
             Explore Machinery
           </Link>
 
-          {/* Customer / General link */}
+          {/* Customer / Bookings */}
           <Link href="/my-bookings" className="hover:text-amber-600 transition">
             My Bookings
           </Link>
 
-          {/* VENDOR ONLY: List machine & Vendor Console */}
+          {/* Vendor Specific Navigation */}
           {user?.role === "VENDOR" && (
             <>
               <Link
@@ -241,18 +245,18 @@ export default function Navbar() {
             </>
           )}
 
-          {/* Logged Out Only: Option to become a vendor */}
+          {/* Logged Out Only */}
           {status !== "authenticated" && (
             <Link
               href="/register"
-              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800"
+              className="flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800 transition"
             >
               <PlusCircle className="h-3.5 w-3.5" />
               <span>Become a Vendor</span>
             </Link>
           )}
 
-          {/* Auth Button */}
+          {/* Auth State Button */}
           {status === "authenticated" ? (
             <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
               <div className="text-right leading-tight">
@@ -284,7 +288,7 @@ export default function Navbar() {
         {/* Mobile Hamburger Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden rounded-lg p-2 text-slate-700 hover:bg-slate-100"
+          className="md:hidden rounded-lg p-2 text-slate-700 hover:bg-slate-100 transition"
           aria-label="Toggle Menu"
         >
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -295,7 +299,7 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-3 shadow-lg">
           {status === "authenticated" && (
-            <div className="pb-2 border-b border-slate-100 flex items-center justify-between">
+            <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <p className="text-sm font-bold text-slate-900">{user?.name}</p>
                 <span className="text-[10px] uppercase font-bold text-amber-600">{user?.role}</span>
@@ -317,6 +321,7 @@ export default function Navbar() {
           >
             Explore Machinery
           </Link>
+
           <Link
             href="/my-bookings"
             onClick={() => setIsOpen(false)}
@@ -325,7 +330,7 @@ export default function Navbar() {
             My Bookings
           </Link>
 
-          {/* Mobile: VENDOR ONLY */}
+          {/* Mobile Vendor Actions */}
           {user?.role === "VENDOR" && (
             <>
               <Link
