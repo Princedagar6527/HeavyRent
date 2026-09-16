@@ -1,54 +1,160 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import User from "@/models/User";
-import bcrypt from "bcryptjs";
+"use client";
 
-export async function POST(req: Request) {
-  try {
-    const { name, phone, password, role } = await req.json();
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Truck, Lock, Phone, User, AlertCircle, ShieldCheck } from "lucide-react";
 
-    if (!name || !phone || !password) {
-      return NextResponse.json(
-        { error: "Name, phone, and password are required" },
-        { status: 400 }
-      );
+export default function RegisterPage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"CUSTOMER" | "VENDOR">("CUSTOMER");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, password, role }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.error || "Failed to register. Try again.");
+        setLoading(false);
+        return;
+      }
+
+      // Registration successful -> redirect to login
+      router.push("/login?registered=true");
+    } catch (err: any) {
+      setErrorMsg("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
+  };
 
-    await dbConnect();
+  return (
+    <div className="flex min-h-[85vh] items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md">
+            <Truck className="h-6 w-6" />
+          </div>
+          <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900">
+            Create an Account
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Join HeavyRent as a Contractor or Vehicle Vendor
+          </p>
+        </div>
 
-    const existingUser = await User.findOne({ phone });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Account with this phone number already exists" },
-        { status: 400 }
-      );
-    }
+        <form onSubmit={handleRegister} className="mt-6 space-y-4">
+          {errorMsg && (
+            <div className="flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs font-semibold text-rose-600 border border-rose-200">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+          {/* Account Role Selection */}
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Account Type</label>
+            <div className="mt-1 grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setRole("CUSTOMER")}
+                className={`rounded-lg py-2 text-xs font-bold transition ${
+                  role === "CUSTOMER"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Customer / Hirer
+              </button>
+              <button
+                type="button"
+                onClick={() => setRole("VENDOR")}
+                className={`rounded-lg py-2 text-xs font-bold transition ${
+                  role === "VENDOR"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Equipment Owner
+              </button>
+            </div>
+          </div>
 
-    const newUser = await User.create({
-      name,
-      phone,
-      password: hashedPassword,
-      role: role || "CUSTOMER",
-    });
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Full Name</label>
+            <div className="relative mt-1">
+              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                required
+                placeholder="Prince Chaudhary"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:bg-white"
+              />
+            </div>
+          </div>
 
-    return NextResponse.json(
-      {
-        success: true,
-        user: {
-          id: newUser._id.toString(),
-          name: newUser.name,
-          phone: newUser.phone,
-          role: newUser.role,
-        },
-      },
-      { status: 201 }
-    );
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Registration failed" },
-      { status: 500 }
-    );
-  }
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Phone Number</label>
+            <div className="relative mt-1">
+              <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="tel"
+                required
+                placeholder="10-digit mobile number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-700">Password</label>
+            <div className="relative mt-1">
+              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <input
+                type="password"
+                required
+                placeholder="Create a strong password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-amber-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-amber-500 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:opacity-50 active:scale-98"
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-slate-600">
+          Already have an account?{" "}
+          <Link href="/login" className="font-bold text-amber-600 hover:underline">
+            Sign In
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
 }
